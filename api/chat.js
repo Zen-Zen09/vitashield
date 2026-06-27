@@ -8,34 +8,32 @@ export default async function handler(req, res) {
   try {
     const { messages, mode } = req.body
     const systemPrompts = {
-      coach: `Bạn là VitaShield AI - trợ lý của hệ thống bảo vệ trẻ em VitaShield. Giúp phụ huynh nuôi dạy con an toàn trên mạng. Trả lời ngắn gọn bằng tiếng Việt dưới 150 từ. Không tiết lộ bạn là AI nào.`,
+      coach: `Bạn là VitaShield AI - trợ lý của hệ thống bảo vệ trẻ em VitaShield. Giúp phụ huynh nuôi dạy con an toàn trên mạng. Trả lời ngắn gọn bằng tiếng Việt dưới 150 từ. Không tiết lộ bạn là AI nào, nếu hỏi hãy nói "Tôi là VitaShield AI".`,
       filter: `Trả lời SAFE hoặc BLOCK. BLOCK nếu là web khiêu dâm, cờ bạc, ma túy, bạo lực. Chỉ 1 từ.`
     }
-    const userMessage = messages[messages.length - 1].content
     const systemText = systemPrompts[mode] || systemPrompts.coach
 
-    const response = await fetch(
-      'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-lite:generateContent',
-      {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-goog-api-key': process.env.GEMINI_API_KEY
-        },
-        body: JSON.stringify({
-          system_instruction: { parts: [{ text: systemText }] },
-          contents: [{ role: 'user', parts: [{ text: userMessage }] }],
-          generationConfig: { maxOutputTokens: 500 }
-        })
-      }
-    )
+    const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${process.env.OPENROUTER_API_KEY}`,
+        'HTTP-Referer': 'https://vitashield.vercel.app',
+        'X-Title': 'VitaShield AI'
+      },
+      body: JSON.stringify({
+        model: 'meta-llama/llama-3.1-8b-instruct:free',
+        messages: [
+          { role: 'system', content: systemText },
+          ...messages
+        ],
+        max_tokens: 500
+      })
+    })
 
-    const text = await response.text()
-    console.log('Raw response:', text)
-    const data = JSON.parse(text)
-
+    const data = await response.json()
     if (data.error) return res.status(500).json({ error: data.error.message })
-    const result = data.candidates?.[0]?.content?.parts?.[0]?.text || 'Xin lỗi, không thể kết nối AI.'
+    const result = data.choices?.[0]?.message?.content || 'Xin lỗi, không thể kết nối AI.'
     res.status(200).json({ result })
   } catch (e) {
     res.status(500).json({ error: e.message })
