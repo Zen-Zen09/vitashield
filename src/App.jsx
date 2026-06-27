@@ -55,14 +55,7 @@ export default function App() {
         setScreenTimeLimit(data.screenTimeLimit || 120)
       } else {
         const code = generateCode()
-        setDoc(parentRef, {
-          pairingCode: code,
-          email: user.email,
-          blockedUrls: [],
-          bedtimeEnabled: true,
-          filterEnabled: true,
-          screenTimeLimit: 120,
-        })
+        setDoc(parentRef, { pairingCode: code, email: user.email, blockedUrls: [], bedtimeEnabled: true, filterEnabled: true, screenTimeLimit: 120 })
         setPairingCode(code)
       }
     })
@@ -81,15 +74,10 @@ export default function App() {
 
   useEffect(() => {
     if (!user || !selectedChild) return
-    const q = query(
-      collection(db, 'logs'),
-      where('parentId', '==', user.uid),
-      where('deviceId', '==', selectedChild.id)
-    )
+    const q = query(collection(db, 'logs'), where('parentId', '==', user.uid), where('deviceId', '==', selectedChild.id))
     const unsub = onSnapshot(q, (snap) => {
       const list = snap.docs.map(d => ({ id: d.id, ...d.data() }))
-        .sort((a, b) => new Date(b.time) - new Date(a.time))
-        .slice(0, 50)
+        .sort((a, b) => new Date(b.time) - new Date(a.time)).slice(0, 50)
       setAlerts(list)
     })
     return unsub
@@ -162,10 +150,7 @@ export default function App() {
       const res = await fetch('/api/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          mode: 'coach',
-          messages: [{ role: 'user', content: aiCoachMsg }]
-        }),
+        body: JSON.stringify({ mode: 'coach', messages: [{ role: 'user', content: aiCoachMsg }] }),
       })
       const data = await res.json()
       setAiResponse(data.result || 'Xin lỗi, không thể kết nối AI.')
@@ -176,8 +161,9 @@ export default function App() {
   }
 
   if (authLoading) return (
-    <div style={{ minHeight: '100vh', background: '#0f1117', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#6366f1', fontSize: '24px' }}>
-      🛡️ Đang tải VitaShield...
+    <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #f0f7ff, #e8f5ee)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#0a4d8c', fontSize: '24px', fontWeight: '700' }}>
+      <img src="/logo.png" alt="VitaShield" style={{ width: 60, marginRight: 16, borderRadius: 12 }} />
+      Đang tải VitaShield...
     </div>
   )
 
@@ -191,7 +177,7 @@ export default function App() {
     <div className="app">
       <aside className="sidebar">
         <div className="logo">
-          <span className="logo-icon">🛡️</span>
+          <img src="/logo.png" alt="VitaShield" style={{ width: 42, height: 42, borderRadius: 10, objectFit: 'cover' }} />
           <span className="logo-text">VitaShield</span>
         </div>
         <nav className="nav">
@@ -214,7 +200,7 @@ export default function App() {
         </nav>
         <div className="sidebar-children">
           <p className="sidebar-label">Thiết bị con</p>
-          {children.length === 0 && <p style={{ color: '#4a5568', fontSize: '12px', padding: '8px' }}>Chưa có thiết bị</p>}
+          {children.length === 0 && <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: '12px', padding: '8px' }}>Chưa có thiết bị</p>}
           {children.map(c => (
             <button key={c.id} className={`child-pill ${selectedChild?.id === c.id ? 'active' : ''}`} onClick={() => setSelectedChild(c)}>
               <span>👦</span>
@@ -241,9 +227,9 @@ export default function App() {
             <p className="page-sub">{child ? `Đang xem: ${child.childName}` : 'Chưa chọn thiết bị'}</p>
           </div>
           <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
-            <span style={{ fontSize: '12px', color: '#64748b' }}>{user.email}</span>
+            <span style={{ fontSize: '12px', color: '#7a9cbf' }}>{user.email}</span>
             <button className="ai-coach-btn" onClick={() => setAiCoachOpen(true)}>🤖 AI Coach</button>
-            <button onClick={() => signOut(auth)} style={{ background: '#1e2535', color: '#94a3b8', border: 'none', borderRadius: '10px', padding: '10px 16px', fontSize: '13px', cursor: 'pointer' }}>
+            <button onClick={() => signOut(auth)} style={{ background: '#f1f5f9', color: '#64748b', border: 'none', borderRadius: '10px', padding: '10px 16px', fontSize: '13px', cursor: 'pointer' }}>
               Đăng xuất
             </button>
           </div>
@@ -254,9 +240,9 @@ export default function App() {
           <div className="content">
             {!child ? (
               <div className="card" style={{ textAlign: 'center', padding: '60px' }}>
-                <p style={{ fontSize: '48px' }}>🔗</p>
-                <h3 style={{ color: '#e2e8f0', marginBottom: '12px' }}>Chưa có thiết bị con nào</h3>
-                <p style={{ color: '#718096', marginBottom: '24px' }}>Ghép thiết bị của con để bắt đầu theo dõi</p>
+                <img src="/logo.png" alt="" style={{ width: 80, borderRadius: 16, marginBottom: 16 }} />
+                <h3 style={{ color: '#0a4d8c', marginBottom: '12px' }}>Chưa có thiết bị con nào</h3>
+                <p style={{ color: '#7a9cbf', marginBottom: '24px' }}>Ghép thiết bị của con để bắt đầu theo dõi</p>
                 <button className="add-child-btn" onClick={() => setActiveTab('pairing')}>+ Ghép thiết bị ngay</button>
               </div>
             ) : (
@@ -293,7 +279,7 @@ export default function App() {
                 </div>
                 <div className="card">
                   <h3 className="card-title">🔔 Hoạt động gần đây</h3>
-                  {alerts.length === 0 && <p style={{ color: '#718096' }}>Chưa có dữ liệu — con chưa dùng Extension</p>}
+                  {alerts.length === 0 && <p style={{ color: '#7a9cbf' }}>Chưa có dữ liệu — con chưa dùng Extension</p>}
                   <div className="alert-list">
                     {alerts.slice(0, 10).map(a => (
                       <div key={a.id} className={`alert-row ${a.blocked ? 'danger' : 'info'}`}>
@@ -317,27 +303,27 @@ export default function App() {
           <div className="content">
             <div className="card" style={{ textAlign: 'center' }}>
               <h3 className="card-title">🔗 Ghép thiết bị con</h3>
-              <p style={{ color: '#718096', marginBottom: '24px' }}>Cho con nhập mã này vào VitaShield Extension trên Chrome</p>
-              <div style={{ background: '#0f1117', borderRadius: '16px', padding: '32px', display: 'inline-block', marginBottom: '24px' }}>
-                <div style={{ fontSize: '48px', fontWeight: '800', letterSpacing: '12px', color: '#667eea', fontFamily: 'monospace' }}>
+              <p style={{ color: '#7a9cbf', marginBottom: '24px' }}>Cho con nhập mã này vào VitaShield Extension trên Chrome</p>
+              <div style={{ background: 'linear-gradient(135deg, #eff8ff, #e8f5ee)', borderRadius: '16px', padding: '32px', display: 'inline-block', marginBottom: '24px', border: '2px solid #bfdbfe' }}>
+                <div style={{ fontSize: '48px', fontWeight: '800', letterSpacing: '12px', color: '#0a4d8c', fontFamily: 'monospace' }}>
                   {pairingCode}
                 </div>
               </div>
-              <div style={{ marginBottom: '24px' }}>
-                <button className="add-child-btn" onClick={() => setShowQR(!showQR)} style={{ marginRight: '12px' }}>
+              <div style={{ marginBottom: '24px', display: 'flex', gap: '12px', justifyContent: 'center' }}>
+                <button className="add-child-btn" onClick={() => setShowQR(!showQR)} style={{ width: 'auto', padding: '10px 20px' }}>
                   {showQR ? 'Ẩn QR' : '📱 Hiện QR Code'}
                 </button>
-                <button className="add-child-btn" onClick={regenerateCode}>🔄 Tạo mã mới</button>
+                <button className="add-child-btn" onClick={regenerateCode} style={{ width: 'auto', padding: '10px 20px' }}>🔄 Tạo mã mới</button>
               </div>
               {showQR && (
                 <div style={{ marginBottom: '24px' }}>
                   <QRCode value={`vitashield://pair/${pairingCode}`} />
-                  <p style={{ color: '#718096', fontSize: '12px', marginTop: '8px' }}>Quét bằng camera điện thoại</p>
+                  <p style={{ color: '#7a9cbf', fontSize: '12px', marginTop: '8px' }}>Quét bằng camera điện thoại</p>
                 </div>
               )}
-              <div style={{ background: '#1a1d2e', borderRadius: '12px', padding: '20px', textAlign: 'left' }}>
-                <p style={{ color: '#e2e8f0', fontWeight: '600', marginBottom: '12px' }}>Hướng dẫn:</p>
-                <p style={{ color: '#718096', fontSize: '14px', lineHeight: '1.8' }}>
+              <div style={{ background: '#f8faff', borderRadius: '12px', padding: '20px', textAlign: 'left', border: '1px solid #e2edf7' }}>
+                <p style={{ color: '#0a4d8c', fontWeight: '600', marginBottom: '12px' }}>Hướng dẫn:</p>
+                <p style={{ color: '#7a9cbf', fontSize: '14px', lineHeight: '1.8' }}>
                   1. Cài VitaShield Extension trên Chrome của con<br />
                   2. Bấm vào icon Extension → nhập mã 6 số ở trên<br />
                   3. Thiết bị của con sẽ xuất hiện trong danh sách<br />
@@ -346,13 +332,13 @@ export default function App() {
               </div>
               {children.length > 0 && (
                 <div style={{ marginTop: '24px', textAlign: 'left' }}>
-                  <h4 style={{ color: '#e2e8f0', marginBottom: '12px' }}>Thiết bị đã ghép:</h4>
+                  <h4 style={{ color: '#0a4d8c', marginBottom: '12px' }}>Thiết bị đã ghép:</h4>
                   {children.map(c => (
                     <div key={c.id} className="alert-row info" style={{ marginBottom: '8px' }}>
                       <span>👦</span>
                       <div>
-                        <p style={{ color: '#e2e8f0', fontWeight: '600' }}>{c.childName}</p>
-                        <p style={{ color: '#718096', fontSize: '12px' }}>Ghép lúc: {new Date(c.pairedAt).toLocaleString('vi-VN')}</p>
+                        <p style={{ color: '#1e3a5f', fontWeight: '600' }}>{c.childName}</p>
+                        <p style={{ color: '#7a9cbf', fontSize: '12px' }}>Ghép lúc: {new Date(c.pairedAt).toLocaleString('vi-VN')}</p>
                       </div>
                       <span className={`tag ${c.online ? 'on' : 'off'}`}>{c.online ? '🟢 Online' : '⚫ Offline'}</span>
                     </div>
@@ -368,7 +354,7 @@ export default function App() {
           <div className="content">
             <div className="card">
               <h3 className="card-title">🔔 Tất cả cảnh báo</h3>
-              {alerts.length === 0 && <p style={{ color: '#718096' }}>Chưa có dữ liệu. Hãy ghép thiết bị con trước.</p>}
+              {alerts.length === 0 && <p style={{ color: '#7a9cbf' }}>Chưa có dữ liệu. Hãy ghép thiết bị con trước.</p>}
               <div className="alert-list">
                 {alerts.map(a => (
                   <div key={a.id} className={`alert-row ${a.blocked ? 'danger' : 'info'}`}>
@@ -418,7 +404,7 @@ export default function App() {
             <div className="card">
               <h3 className="card-title">🌐 Website chặn thủ công</h3>
               <div className="blocked-list">
-                {blockedUrls.length === 0 && <p style={{ color: '#718096', fontSize: '14px' }}>Chưa có website nào được chặn thủ công</p>}
+                {blockedUrls.length === 0 && <p style={{ color: '#7a9cbf', fontSize: '14px' }}>Chưa có website nào được chặn thủ công</p>}
                 {blockedUrls.map((url, i) => (
                   <div key={i} className="blocked-url">
                     <span>🚫 {url}</span>
@@ -427,13 +413,7 @@ export default function App() {
                 ))}
               </div>
               <div className="add-url">
-                <input
-                  className="url-input"
-                  placeholder="vd: tiktok.com, facebook.com..."
-                  value={newBlockedUrl}
-                  onChange={e => setNewBlockedUrl(e.target.value)}
-                  onKeyDown={e => e.key === 'Enter' && addBlockedUrl()}
-                />
+                <input className="url-input" placeholder="vd: tiktok.com, facebook.com..." value={newBlockedUrl} onChange={e => setNewBlockedUrl(e.target.value)} onKeyDown={e => e.key === 'Enter' && addBlockedUrl()} />
                 <button className="add-btn" onClick={addBlockedUrl}>+ Thêm</button>
               </div>
             </div>
@@ -446,7 +426,7 @@ export default function App() {
             {children.length === 0 ? (
               <div className="card" style={{ textAlign: 'center', padding: '60px' }}>
                 <p style={{ fontSize: '48px' }}>👨‍👩‍👧‍👦</p>
-                <h3 style={{ color: '#e2e8f0', marginBottom: '12px' }}>Chưa có thiết bị con</h3>
+                <h3 style={{ color: '#0a4d8c', marginBottom: '12px' }}>Chưa có thiết bị con</h3>
                 <button className="add-child-btn" onClick={() => setActiveTab('pairing')}>+ Ghép thiết bị</button>
               </div>
             ) : (
@@ -459,10 +439,7 @@ export default function App() {
                       <p className="card-sub">Ghép lúc: {new Date(c.pairedAt).toLocaleString('vi-VN')}</p>
                       <span className={`tag ${c.online ? 'on' : 'off'}`}>{c.online ? '🟢 Đang online' : '⚫ Offline'}</span>
                     </div>
-                    <button
-                      onClick={() => removeDevice(c.id)}
-                      style={{ background: '#ef444420', color: '#ef4444', border: '1px solid #ef444440', borderRadius: '8px', padding: '8px 14px', cursor: 'pointer', fontSize: '13px' }}
-                    >
+                    <button onClick={() => removeDevice(c.id)} style={{ background: '#fee2e2', color: '#dc2626', border: '1px solid #fecaca', borderRadius: '8px', padding: '8px 14px', cursor: 'pointer', fontSize: '13px' }}>
                       🗑️ Xóa
                     </button>
                   </div>
@@ -485,26 +462,21 @@ export default function App() {
                       <span className="big-num">{child.screenTime || 0}</span>
                       <span className="limit"> / {screenTimeLimit} phút</span>
                     </div>
-                    <div style={{ background: '#1a1d2e', borderRadius: '8px', height: '12px', marginTop: '12px' }}>
+                    <div style={{ background: '#e2edf7', borderRadius: '8px', height: '12px', marginTop: '12px' }}>
                       <div style={{
-                        background: (child.screenTime || 0) > screenTimeLimit ? '#ef4444' : '#667eea',
+                        background: (child.screenTime || 0) > screenTimeLimit ? '#ef4444' : 'linear-gradient(90deg, #0a4d8c, #0a9e78)',
                         width: `${Math.min(((child.screenTime || 0) / screenTimeLimit) * 100, 100)}%`,
                         height: '12px', borderRadius: '8px', transition: 'width 0.5s'
                       }} />
                     </div>
                   </div>
                   <div style={{ marginTop: '20px' }}>
-                    <p style={{ color: '#94a3b8', marginBottom: '8px' }}>Giới hạn mỗi ngày (phút):</p>
-                    <input
-                      type="number"
-                      value={screenTimeLimit}
-                      min={30} max={480}
-                      onChange={e => updateScreenTimeLimit(Number(e.target.value))}
-                      style={{ background: '#1a1d2e', color: '#e2e8f0', border: '1px solid #2d3748', borderRadius: '8px', padding: '8px 14px', width: '100px', fontSize: '16px' }}
-                    />
+                    <p style={{ color: '#7a9cbf', marginBottom: '8px' }}>Giới hạn mỗi ngày (phút):</p>
+                    <input type="number" value={screenTimeLimit} min={30} max={480} onChange={e => updateScreenTimeLimit(Number(e.target.value))}
+                      style={{ background: '#f8faff', color: '#1e3a5f', border: '1px solid #e2edf7', borderRadius: '8px', padding: '8px 14px', width: '100px', fontSize: '16px' }} />
                   </div>
                 </>
-              ) : <p style={{ color: '#718096' }}>Chưa có thiết bị</p>}
+              ) : <p style={{ color: '#7a9cbf' }}>Chưa có thiết bị</p>}
               <div className="time-settings" style={{ marginTop: '20px' }}>
                 <div className="time-row">
                   <div>
@@ -527,8 +499,8 @@ export default function App() {
               <h3 className="card-title">📈 Báo cáo hoạt động</h3>
               <div className="report-summary">
                 <div className="summary-item"><span>Tổng URL đã phân tích</span><strong>{alerts.length}</strong></div>
-                <div className="summary-item"><span>Trang bị chặn</span><strong style={{ color: '#ef4444' }}>{blockedCount}</strong></div>
-                <div className="summary-item"><span>Trang an toàn</span><strong style={{ color: '#22c55e' }}>{safeCount}</strong></div>
+                <div className="summary-item"><span>Trang bị chặn</span><strong style={{ color: '#dc2626' }}>{blockedCount}</strong></div>
+                <div className="summary-item"><span>Trang an toàn</span><strong style={{ color: '#059669' }}>{safeCount}</strong></div>
                 <div className="summary-item"><span>Thời gian màn hình</span><strong>{child?.screenTime || 0} phút</strong></div>
                 <div className="summary-item"><span>Website chặn thủ công</span><strong>{blockedUrls.length}</strong></div>
               </div>
@@ -536,14 +508,12 @@ export default function App() {
             <div className="card">
               <h3 className="card-title">🚫 Top website bị chặn nhiều nhất</h3>
               {alerts.filter(a => a.blocked).length === 0
-                ? <p style={{ color: '#718096' }}>Chưa có dữ liệu</p>
-                : Object.entries(
-                    alerts.filter(a => a.blocked).reduce((acc, a) => {
-                      const host = a.url?.replace(/https?:\/\//, '').split('/')[0] || a.url
-                      acc[host] = (acc[host] || 0) + 1
-                      return acc
-                    }, {})
-                  ).sort((a, b) => b[1] - a[1]).slice(0, 5).map(([host, count], i) => (
+                ? <p style={{ color: '#7a9cbf' }}>Chưa có dữ liệu</p>
+                : Object.entries(alerts.filter(a => a.blocked).reduce((acc, a) => {
+                    const host = a.url?.replace(/https?:\/\//, '').split('/')[0] || a.url
+                    acc[host] = (acc[host] || 0) + 1
+                    return acc
+                  }, {})).sort((a, b) => b[1] - a[1]).slice(0, 5).map(([host, count], i) => (
                     <div key={i} className="blocked-url">
                       <span>🚫 {host}</span>
                       <span className="tag danger">{count} lần</span>
@@ -562,24 +532,24 @@ export default function App() {
               <div className="report-summary">
                 <div className="summary-item"><span>Email</span><strong>{user.email}</strong></div>
                 <div className="summary-item"><span>Số thiết bị con</span><strong>{children.length}</strong></div>
-                <div className="summary-item"><span>Mã ghép cặp</span><strong style={{ fontFamily: 'monospace', color: '#667eea' }}>{pairingCode}</strong></div>
+                <div className="summary-item"><span>Mã ghép cặp</span><strong style={{ fontFamily: 'monospace', color: '#0a4d8c' }}>{pairingCode}</strong></div>
               </div>
             </div>
-            <div className="card" style={{ borderColor: '#ef4444' }}>
-              <h3 className="card-title" style={{ color: '#ef4444' }}>⚠️ Vùng nguy hiểm</h3>
-              <p style={{ color: '#718096', marginBottom: '16px' }}>Xóa tài khoản sẽ xóa toàn bộ dữ liệu và không thể khôi phục.</p>
+            <div className="card" style={{ borderColor: '#fecaca' }}>
+              <h3 className="card-title" style={{ color: '#dc2626' }}>⚠️ Vùng nguy hiểm</h3>
+              <p style={{ color: '#7a9cbf', marginBottom: '16px' }}>Xóa tài khoản sẽ xóa toàn bộ dữ liệu và không thể khôi phục.</p>
               {!showDeleteConfirm ? (
-                <button onClick={() => setShowDeleteConfirm(true)} style={{ background: '#ef4444', color: 'white', border: 'none', borderRadius: '10px', padding: '12px 24px', cursor: 'pointer', fontWeight: '600' }}>
+                <button onClick={() => setShowDeleteConfirm(true)} style={{ background: '#dc2626', color: 'white', border: 'none', borderRadius: '10px', padding: '12px 24px', cursor: 'pointer', fontWeight: '600' }}>
                   🗑️ Xóa tài khoản
                 </button>
               ) : (
-                <div style={{ background: '#1a1d2e', borderRadius: '12px', padding: '20px' }}>
-                  <p style={{ color: '#ef4444', fontWeight: '600', marginBottom: '16px' }}>Bạn chắc chắn muốn xóa tài khoản?</p>
+                <div style={{ background: '#fff5f5', borderRadius: '12px', padding: '20px', border: '1px solid #fecaca' }}>
+                  <p style={{ color: '#dc2626', fontWeight: '600', marginBottom: '16px' }}>Bạn chắc chắn muốn xóa tài khoản?</p>
                   <div style={{ display: 'flex', gap: '12px' }}>
-                    <button onClick={handleDeleteAccount} style={{ background: '#ef4444', color: 'white', border: 'none', borderRadius: '10px', padding: '12px 24px', cursor: 'pointer', fontWeight: '600' }}>
+                    <button onClick={handleDeleteAccount} style={{ background: '#dc2626', color: 'white', border: 'none', borderRadius: '10px', padding: '12px 24px', cursor: 'pointer', fontWeight: '600' }}>
                       Xác nhận xóa
                     </button>
-                    <button onClick={() => setShowDeleteConfirm(false)} style={{ background: '#2d3748', color: '#e2e8f0', border: 'none', borderRadius: '10px', padding: '12px 24px', cursor: 'pointer' }}>
+                    <button onClick={() => setShowDeleteConfirm(false)} style={{ background: '#f1f5f9', color: '#64748b', border: 'none', borderRadius: '10px', padding: '12px 24px', cursor: 'pointer' }}>
                       Hủy
                     </button>
                   </div>
@@ -595,7 +565,7 @@ export default function App() {
         <div className="modal-overlay" onClick={() => setAiCoachOpen(false)}>
           <div className="modal" onClick={e => e.stopPropagation()}>
             <div className="modal-header">
-              <h2>🤖 AI Co-Parenting Coach</h2>
+              <h2>🤖 VitaShield AI Coach</h2>
               <button className="close-btn" onClick={() => setAiCoachOpen(false)}>✕</button>
             </div>
             <p className="modal-sub">Hỏi AI về cách nuôi dạy con an toàn trên mạng</p>
@@ -614,7 +584,7 @@ export default function App() {
             </button>
             {aiResponse && (
               <div className="coach-response">
-                <p className="response-label">💡 Gợi ý từ AI Coach:</p>
+                <p className="response-label">💡 Gợi ý từ VitaShield AI:</p>
                 <p>{aiResponse}</p>
               </div>
             )}
