@@ -1,65 +1,38 @@
 import { useState, useEffect } from 'react'
 import './App.css'
 import Login from './Login'
-import { auth } from './firebase'
-import { onAuthStateChanged, signOut } from 'firebase/auth'
+import { auth, db } from './firebase'
+import { onAuthStateChanged, signOut, deleteUser } from 'firebase/auth'
+import { doc, setDoc, getDoc, collection, onSnapshot, deleteDoc, query, where, getDocs } from 'firebase/firestore'
 
-const MOCK_CHILDREN = [
-  {
-    id: 1,
-    name: 'Minh Anh',
-    age: 10,
-    avatar: '👧',
-    device: 'Samsung Galaxy A14',
-    status: 'online',
-    screenTimeToday: 95,
-    screenTimeLimit: 120,
-    appsUsed: ['YouTube Kids', 'Minecraft', 'Google Chrome'],
-    alerts: 2,
-    safetyScore: 87,
-  },
-  {
-    id: 2,
-    name: 'Tuấn Kiệt',
-    age: 13,
-    avatar: '👦',
-    device: 'iPhone 13',
-    status: 'offline',
-    screenTimeToday: 140,
-    screenTimeLimit: 120,
-    appsUsed: ['TikTok', 'YouTube', 'Instagram', 'Chrome'],
-    alerts: 5,
-    safetyScore: 62,
-  },
-]
+function generateCode() {
+  return Math.floor(100000 + Math.random() * 900000).toString()
+}
 
-const MOCK_ALERTS = [
-  { id: 1, childId: 2, type: 'danger', icon: '🚨', title: 'Nội dung không phù hợp', desc: 'Tuấn Kiệt cố truy cập trang web bị chặn: xxx-content.com', time: '14 phút trước' },
-  { id: 2, childId: 2, type: 'warning', icon: '⏰', title: 'Vượt giới hạn thời gian', desc: 'Tuấn Kiệt đã dùng màn hình 20 phút quá giới hạn hôm nay', time: '1 giờ trước' },
-  { id: 3, childId: 1, type: 'warning', icon: '💬', title: 'Từ khóa đáng chú ý', desc: 'Minh Anh tìm kiếm từ khóa "cách trốn học"', time: '2 giờ trước' },
-  { id: 4, childId: 2, type: 'danger', icon: '🤖', title: 'Tương tác AI đáng ngờ', desc: 'Phát hiện cuộc trò chuyện bất thường với ChatGPT', time: '3 giờ trước' },
-  { id: 5, childId: 1, type: 'info', icon: '✅', title: 'Sử dụng tốt', desc: 'Minh Anh đạt 50 điểm thưởng hôm nay!', time: '4 giờ trước' },
-]
-
-const MOCK_ACTIVITY = [
-  { app: 'YouTube Kids', icon: '▶️', duration: 45, safe: true },
-  { app: 'Minecraft', icon: '🎮', duration: 30, safe: true },
-  { app: 'Google Chrome', icon: '🌐', duration: 20, safe: true },
-  { app: 'TikTok', icon: '🎵', duration: 60, safe: false },
-  { app: 'Instagram', icon: '📷', duration: 40, safe: false },
-]
+function QRCode({ value }) {
+  const url = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(value)}`
+  return <img src={url} alt="QR Code" style={{ width: 200, height: 200, borderRadius: 12 }} />
+}
 
 export default function App() {
   const [user, setUser] = useState(null)
   const [authLoading, setAuthLoading] = useState(true)
   const [activeTab, setActiveTab] = useState('dashboard')
-  const [selectedChild, setSelectedChild] = useState(MOCK_CHILDREN[0])
-  const [bedtimeEnabled, setBedtimeEnabled] = useState(true)
-  const [filterEnabled, setFilterEnabled] = useState(true)
+  const [selectedChild, setSelectedChild] = useState(null)
+  const [children, setChildren] = useState([])
+  const [alerts, setAlerts] = useState([])
+  const [pairingCode, setPairingCode] = useState('')
+  const [showQR, setShowQR] = useState(false)
   const [aiCoachOpen, setAiCoachOpen] = useState(false)
   const [aiCoachMsg, setAiCoachMsg] = useState('')
   const [aiResponse, setAiResponse] = useState('')
   const [aiLoading, setAiLoading] = useState(false)
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
+  const [bedtimeEnabled, setBedtimeEnabled] = useState(true)
+  const [filterEnabled, setFilterEnabled] = useState(true)
+  const [newBlockedUrl, setNewBlockedUrl] = useState('')
+  const [blockedUrls, setBlockedUrls] = useState([])
+  const [screenTimeLimit, setScreenTimeLimit] = useState(120)
 
   useEffect(() => {
     const unsub = onAuthStateChanged(auth, (u) => {
@@ -69,16 +42,117 @@ export default function App() {
     return unsub
   }, [])
 
-  if (authLoading) return (
-    <div style={{ minHeight: '100vh', background: '#0f1117', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#6366f1', fontSize: '24px' }}>
-      🛡️ Đang tải VitaShield...
-    </div>
-  )
+  useEffect(() => {
+    if (!user) return
+    const parentRef = doc(db, 'parents', user.uid)
+    getDoc(parentRef).then(snap => {
+      if (snap.exists()) {
+        const data = snap.data()
+        setPairingCode(data.pairingCode || '')
+        setBlockedUrls(data.blockedUrls || [])
+        setBedtimeEnabled(data.bedtimeEnabled ?? true)
+        setFilterEnabled(data.filterEnabled ?? true)
+        setScreenTimeLimit(data.screenTimeLimit || 120)
+      } else {
+        const code = generateCode()
+        setDoc(parentRef, {
+          pairingCode: code,
+          email: user.email,
+          blockedUrls: [],
+          bedtimeEnabled: true,
+          filterEnabled: true,
+          screenTimeLimit: 120,
+        })
+        setPairingCode(code)
+      }
+    })
+  }, [user])
 
-  if (!user) return <Login onLogin={() => {}} />
+  useEffect(() => {
+    if (!user) return
+    const q = query(collection(db, 'devices'), where('parentId', '==', user.uid))
+    const unsub = onSnapshot(q, (snap) => {
+      const list = snap.docs.map(d => ({ id: d.id, ...d.data() }))
+      setChildren(list)
+      if (list.length > 0 && !selectedChild) setSelectedChild(list[0])
+    })
+    return unsub
+  }, [user])
 
-  const totalAlerts = MOCK_ALERTS.filter(a => a.type === 'danger').length
-  const child = selectedChild
+  useEffect(() => {
+    if (!user || !selectedChild) return
+    const q = query(
+      collection(db, 'logs'),
+      where('parentId', '==', user.uid),
+      where('deviceId', '==', selectedChild.id)
+    )
+    const unsub = onSnapshot(q, (snap) => {
+      const list = snap.docs.map(d => ({ id: d.id, ...d.data() }))
+        .sort((a, b) => new Date(b.time) - new Date(a.time))
+        .slice(0, 50)
+      setAlerts(list)
+    })
+    return unsub
+  }, [user, selectedChild])
+
+  async function saveParentSettings(updates) {
+    await setDoc(doc(db, 'parents', user.uid), updates, { merge: true })
+  }
+
+  async function regenerateCode() {
+    const code = generateCode()
+    await saveParentSettings({ pairingCode: code })
+    setPairingCode(code)
+  }
+
+  async function addBlockedUrl() {
+    if (!newBlockedUrl.trim()) return
+    const updated = [...blockedUrls, newBlockedUrl.trim().toLowerCase()]
+    setBlockedUrls(updated)
+    setNewBlockedUrl('')
+    await saveParentSettings({ blockedUrls: updated })
+  }
+
+  async function removeBlockedUrl(url) {
+    const updated = blockedUrls.filter(u => u !== url)
+    setBlockedUrls(updated)
+    await saveParentSettings({ blockedUrls: updated })
+  }
+
+  async function toggleBedtime(val) {
+    setBedtimeEnabled(val)
+    await saveParentSettings({ bedtimeEnabled: val })
+  }
+
+  async function toggleFilter(val) {
+    setFilterEnabled(val)
+    await saveParentSettings({ filterEnabled: val })
+  }
+
+  async function updateScreenTimeLimit(val) {
+    setScreenTimeLimit(val)
+    await saveParentSettings({ screenTimeLimit: val })
+  }
+
+  async function removeDevice(deviceId) {
+    await deleteDoc(doc(db, 'devices', deviceId))
+    if (selectedChild?.id === deviceId) setSelectedChild(null)
+  }
+
+  async function handleDeleteAccount() {
+    try {
+      await deleteDoc(doc(db, 'parents', user.uid))
+      const q = query(collection(db, 'devices'), where('parentId', '==', user.uid))
+      const snap = await getDocs(q)
+      for (const d of snap.docs) await deleteDoc(d.ref)
+      const q2 = query(collection(db, 'logs'), where('parentId', '==', user.uid))
+      const snap2 = await getDocs(q2)
+      for (const d of snap2.docs) await deleteDoc(d.ref)
+      await deleteUser(user)
+    } catch (e) {
+      alert('Lỗi: ' + e.message + '\nVui lòng đăng xuất và đăng nhập lại trước khi xóa.')
+    }
+  }
 
   async function askAiCoach() {
     if (!aiCoachMsg.trim()) return
@@ -91,74 +165,69 @@ export default function App() {
         body: JSON.stringify({
           model: 'claude-sonnet-4-6',
           max_tokens: 1000,
-          system: `Bạn là VitaShield AI Coach - chuyên gia tư vấn nuôi dạy con an toàn trên không gian mạng. 
-Phụ huynh đang quản lý con tên ${child.name}, ${child.age} tuổi.
-Điểm an toàn của con hôm nay: ${child.safetyScore}/100.
-Số cảnh báo: ${child.alerts} cảnh báo.
-Hãy đưa ra lời khuyên thực tế, ấm áp, cụ thể bằng tiếng Việt. Ngắn gọn dưới 150 từ.`,
+          system: `Bạn là VitaShield AI Coach - chuyên gia tư vấn nuôi dạy con an toàn trên không gian mạng. Hãy đưa ra lời khuyên thực tế, ấm áp, cụ thể bằng tiếng Việt. Ngắn gọn dưới 150 từ.`,
           messages: [{ role: 'user', content: aiCoachMsg }],
         }),
       })
       const data = await res.json()
-      setAiResponse(data.content?.[0]?.text || 'Xin lỗi, không thể kết nối AI lúc này.')
+      setAiResponse(data.content?.[0]?.text || 'Xin lỗi, không thể kết nối AI.')
     } catch {
       setAiResponse('Không thể kết nối AI. Vui lòng thử lại.')
     }
     setAiLoading(false)
   }
 
-  const pct = Math.min(100, Math.round((child.screenTimeToday / child.screenTimeLimit) * 100))
-  const scoreColor = child.safetyScore >= 80 ? '#22c55e' : child.safetyScore >= 60 ? '#f59e0b' : '#ef4444'
+  if (authLoading) return (
+    <div style={{ minHeight: '100vh', background: '#0f1117', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#6366f1', fontSize: '24px' }}>
+      🛡️ Đang tải VitaShield...
+    </div>
+  )
+
+  if (!user) return <Login onLogin={() => {}} />
+
+  const child = selectedChild
+  const blockedCount = alerts.filter(a => a.blocked).length
+  const safeCount = alerts.filter(a => !a.blocked).length
 
   return (
     <div className="app">
-      {/* Sidebar */}
       <aside className="sidebar">
         <div className="logo">
           <span className="logo-icon">🛡️</span>
           <span className="logo-text">VitaShield</span>
         </div>
-
         <nav className="nav">
           {[
             { id: 'dashboard', icon: '📊', label: 'Tổng quan' },
             { id: 'children', icon: '👨‍👩‍👧‍👦', label: 'Quản lý con' },
             { id: 'filter', icon: '🔒', label: 'Lọc nội dung' },
             { id: 'screentime', icon: '⏱️', label: 'Thời gian màn hình' },
-            { id: 'alerts', icon: '🔔', label: `Cảnh báo`, badge: totalAlerts },
+            { id: 'alerts', icon: '🔔', label: 'Cảnh báo', badge: blockedCount },
             { id: 'reports', icon: '📈', label: 'Báo cáo' },
+            { id: 'pairing', icon: '🔗', label: 'Ghép thiết bị' },
+            { id: 'settings', icon: '⚙️', label: 'Cài đặt' },
           ].map(item => (
-            <button
-              key={item.id}
-              className={`nav-item ${activeTab === item.id ? 'active' : ''}`}
-              onClick={() => setActiveTab(item.id)}
-            >
+            <button key={item.id} className={`nav-item ${activeTab === item.id ? 'active' : ''}`} onClick={() => setActiveTab(item.id)}>
               <span className="nav-icon">{item.icon}</span>
               <span>{item.label}</span>
               {item.badge > 0 && <span className="badge">{item.badge}</span>}
             </button>
           ))}
         </nav>
-
         <div className="sidebar-children">
           <p className="sidebar-label">Thiết bị con</p>
-          {MOCK_CHILDREN.map(c => (
-            <button
-              key={c.id}
-              className={`child-pill ${selectedChild.id === c.id ? 'active' : ''}`}
-              onClick={() => setSelectedChild(c)}
-            >
-              <span>{c.avatar}</span>
-              <span>{c.name}</span>
-              <span className={`dot ${c.status}`}></span>
+          {children.length === 0 && <p style={{ color: '#4a5568', fontSize: '12px', padding: '8px' }}>Chưa có thiết bị</p>}
+          {children.map(c => (
+            <button key={c.id} className={`child-pill ${selectedChild?.id === c.id ? 'active' : ''}`} onClick={() => setSelectedChild(c)}>
+              <span>👦</span>
+              <span>{c.childName || 'Con'}</span>
+              <span className={`dot ${c.online ? 'online' : 'offline'}`}></span>
             </button>
           ))}
         </div>
       </aside>
 
-      {/* Main */}
       <main className="main">
-        {/* Header */}
         <header className="header">
           <div>
             <h1 className="page-title">
@@ -168,299 +237,357 @@ Hãy đưa ra lời khuyên thực tế, ấm áp, cụ thể bằng tiếng Vi�
               {activeTab === 'screentime' && 'Thời gian màn hình'}
               {activeTab === 'alerts' && 'Cảnh báo'}
               {activeTab === 'reports' && 'Báo cáo'}
+              {activeTab === 'pairing' && 'Ghép thiết bị'}
+              {activeTab === 'settings' && 'Cài đặt'}
             </h1>
-            <p className="page-sub">Đang xem: {child.name} · {child.device}</p>
+            <p className="page-sub">{child ? `Đang xem: ${child.childName}` : 'Chưa chọn thiết bị'}</p>
           </div>
           <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
             <span style={{ fontSize: '12px', color: '#64748b' }}>{user.email}</span>
-            <button className="ai-coach-btn" onClick={() => setAiCoachOpen(true)}>
-              🤖 AI Coach
-            </button>
+            <button className="ai-coach-btn" onClick={() => setAiCoachOpen(true)}>🤖 AI Coach</button>
             <button onClick={() => signOut(auth)} style={{ background: '#1e2535', color: '#94a3b8', border: 'none', borderRadius: '10px', padding: '10px 16px', fontSize: '13px', cursor: 'pointer' }}>
               Đăng xuất
             </button>
           </div>
         </header>
 
-        {/* Dashboard Tab */}
+        {/* DASHBOARD */}
         {activeTab === 'dashboard' && (
           <div className="content">
-            {/* Stats row */}
-            <div className="stats-grid">
-              <div className="stat-card">
-                <div className="stat-icon green">🛡️</div>
-                <div>
-                  <div className="stat-value" style={{ color: scoreColor }}>{child.safetyScore}</div>
-                  <div className="stat-label">Điểm an toàn</div>
-                </div>
+            {!child ? (
+              <div className="card" style={{ textAlign: 'center', padding: '60px' }}>
+                <p style={{ fontSize: '48px' }}>🔗</p>
+                <h3 style={{ color: '#e2e8f0', marginBottom: '12px' }}>Chưa có thiết bị con nào</h3>
+                <p style={{ color: '#718096', marginBottom: '24px' }}>Ghép thiết bị của con để bắt đầu theo dõi</p>
+                <button className="add-child-btn" onClick={() => setActiveTab('pairing')}>+ Ghép thiết bị ngay</button>
               </div>
-              <div className="stat-card">
-                <div className="stat-icon blue">⏱️</div>
-                <div>
-                  <div className="stat-value">{child.screenTimeToday}p</div>
-                  <div className="stat-label">Màn hình hôm nay</div>
-                </div>
-              </div>
-              <div className="stat-card">
-                <div className="stat-icon red">🔔</div>
-                <div>
-                  <div className="stat-value">{child.alerts}</div>
-                  <div className="stat-label">Cảnh báo</div>
-                </div>
-              </div>
-              <div className="stat-card">
-                <div className="stat-icon purple">📱</div>
-                <div>
-                  <div className="stat-value">{child.appsUsed.length}</div>
-                  <div className="stat-label">App đã dùng</div>
-                </div>
-              </div>
-            </div>
-
-            <div className="two-col">
-              {/* Screen time */}
-              <div className="card">
-                <h3 className="card-title">⏱️ Thời gian màn hình</h3>
-                <div className="screen-time-display">
-                  <div className="screen-time-nums">
-                    <span className="big-num">{child.screenTimeToday}</span>
-                    <span className="divider"> / </span>
-                    <span className="limit">{child.screenTimeLimit} phút</span>
-                  </div>
-                  <div className="progress-bar">
-                    <div
-                      className="progress-fill"
-                      style={{
-                        width: `${pct}%`,
-                        background: pct >= 100 ? '#ef4444' : pct >= 80 ? '#f59e0b' : '#22c55e'
-                      }}
-                    />
-                  </div>
-                  <p className="progress-label">{pct}% giới hạn hàng ngày</p>
-                </div>
-
-                <div className="app-list">
-                  {MOCK_ACTIVITY.filter((_, i) => child.id === 1 ? i < 3 : true).map((a, i) => (
-                    <div key={i} className="app-row">
-                      <span className="app-icon">{a.icon}</span>
-                      <span className="app-name">{a.app}</span>
-                      <span className={`app-safe ${a.safe ? 'safe' : 'unsafe'}`}>
-                        {a.safe ? '✓ An toàn' : '⚠ Chú ý'}
-                      </span>
-                      <span className="app-dur">{a.duration}p</span>
+            ) : (
+              <>
+                <div className="stats-grid">
+                  <div className="stat-card">
+                    <div className="stat-icon blue">⏱️</div>
+                    <div>
+                      <div className="stat-value">{child.screenTime || 0}p</div>
+                      <div className="stat-label">Màn hình hôm nay</div>
                     </div>
-                  ))}
+                  </div>
+                  <div className="stat-card">
+                    <div className="stat-icon red">🚫</div>
+                    <div>
+                      <div className="stat-value">{blockedCount}</div>
+                      <div className="stat-label">Trang bị chặn</div>
+                    </div>
+                  </div>
+                  <div className="stat-card">
+                    <div className="stat-icon green">✅</div>
+                    <div>
+                      <div className="stat-value">{safeCount}</div>
+                      <div className="stat-label">Trang an toàn</div>
+                    </div>
+                  </div>
+                  <div className="stat-card">
+                    <div className="stat-icon purple">📱</div>
+                    <div>
+                      <div className="stat-value">{child.online ? '🟢' : '⚫'}</div>
+                      <div className="stat-label">{child.online ? 'Đang online' : 'Offline'}</div>
+                    </div>
+                  </div>
                 </div>
-              </div>
-
-              {/* Recent alerts */}
-              <div className="card">
-                <h3 className="card-title">🔔 Cảnh báo gần đây</h3>
-                <div className="alert-list">
-                  {MOCK_ALERTS.filter(a => a.childId === child.id).map(a => (
-                    <div key={a.id} className={`alert-row ${a.type}`}>
-                      <span className="alert-icon">{a.icon}</span>
-                      <div className="alert-content">
-                        <p className="alert-title">{a.title}</p>
-                        <p className="alert-desc">{a.desc}</p>
-                        <p className="alert-time">{a.time}</p>
+                <div className="card">
+                  <h3 className="card-title">🔔 Hoạt động gần đây</h3>
+                  {alerts.length === 0 && <p style={{ color: '#718096' }}>Chưa có dữ liệu — con chưa dùng Extension</p>}
+                  <div className="alert-list">
+                    {alerts.slice(0, 10).map(a => (
+                      <div key={a.id} className={`alert-row ${a.blocked ? 'danger' : 'info'}`}>
+                        <span className="alert-icon">{a.blocked ? '🚫' : '✅'}</span>
+                        <div className="alert-content">
+                          <p className="alert-title">{a.url}</p>
+                          <p className="alert-time">{new Date(a.time).toLocaleString('vi-VN')}</p>
+                        </div>
+                        <span className={`tag ${a.blocked ? 'danger' : 'on'}`}>{a.blocked ? 'Bị chặn' : 'An toàn'}</span>
                       </div>
+                    ))}
+                  </div>
+                </div>
+              </>
+            )}
+          </div>
+        )}
+
+        {/* PAIRING */}
+        {activeTab === 'pairing' && (
+          <div className="content">
+            <div className="card" style={{ textAlign: 'center' }}>
+              <h3 className="card-title">🔗 Ghép thiết bị con</h3>
+              <p style={{ color: '#718096', marginBottom: '24px' }}>Cho con nhập mã này vào VitaShield Extension trên Chrome</p>
+              <div style={{ background: '#0f1117', borderRadius: '16px', padding: '32px', display: 'inline-block', marginBottom: '24px' }}>
+                <div style={{ fontSize: '48px', fontWeight: '800', letterSpacing: '12px', color: '#667eea', fontFamily: 'monospace' }}>
+                  {pairingCode}
+                </div>
+              </div>
+              <div style={{ marginBottom: '24px' }}>
+                <button className="add-child-btn" onClick={() => setShowQR(!showQR)} style={{ marginRight: '12px' }}>
+                  {showQR ? 'Ẩn QR' : '📱 Hiện QR Code'}
+                </button>
+                <button className="add-child-btn" onClick={regenerateCode}>🔄 Tạo mã mới</button>
+              </div>
+              {showQR && (
+                <div style={{ marginBottom: '24px' }}>
+                  <QRCode value={`vitashield://pair/${pairingCode}`} />
+                  <p style={{ color: '#718096', fontSize: '12px', marginTop: '8px' }}>Quét bằng camera điện thoại</p>
+                </div>
+              )}
+              <div style={{ background: '#1a1d2e', borderRadius: '12px', padding: '20px', textAlign: 'left' }}>
+                <p style={{ color: '#e2e8f0', fontWeight: '600', marginBottom: '12px' }}>Hướng dẫn:</p>
+                <p style={{ color: '#718096', fontSize: '14px', lineHeight: '1.8' }}>
+                  1. Cài VitaShield Extension trên Chrome của con<br />
+                  2. Bấm vào icon Extension → nhập mã 6 số ở trên<br />
+                  3. Thiết bị của con sẽ xuất hiện trong danh sách<br />
+                  4. Bạn có thể theo dõi và kiểm soát từ đây
+                </p>
+              </div>
+              {children.length > 0 && (
+                <div style={{ marginTop: '24px', textAlign: 'left' }}>
+                  <h4 style={{ color: '#e2e8f0', marginBottom: '12px' }}>Thiết bị đã ghép:</h4>
+                  {children.map(c => (
+                    <div key={c.id} className="alert-row info" style={{ marginBottom: '8px' }}>
+                      <span>👦</span>
+                      <div>
+                        <p style={{ color: '#e2e8f0', fontWeight: '600' }}>{c.childName}</p>
+                        <p style={{ color: '#718096', fontSize: '12px' }}>Ghép lúc: {new Date(c.pairedAt).toLocaleString('vi-VN')}</p>
+                      </div>
+                      <span className={`tag ${c.online ? 'on' : 'off'}`}>{c.online ? '🟢 Online' : '⚫ Offline'}</span>
                     </div>
                   ))}
                 </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* ALERTS */}
+        {activeTab === 'alerts' && (
+          <div className="content">
+            <div className="card">
+              <h3 className="card-title">🔔 Tất cả cảnh báo</h3>
+              {alerts.length === 0 && <p style={{ color: '#718096' }}>Chưa có dữ liệu. Hãy ghép thiết bị con trước.</p>}
+              <div className="alert-list">
+                {alerts.map(a => (
+                  <div key={a.id} className={`alert-row ${a.blocked ? 'danger' : 'info'}`}>
+                    <span className="alert-icon">{a.blocked ? '🚫' : '✅'}</span>
+                    <div className="alert-content">
+                      <p className="alert-title">{a.url}</p>
+                      <p className="alert-desc">{a.blocked ? 'Bị chặn bởi VitaShield' : 'Truy cập bình thường'}</p>
+                      <p className="alert-time">{new Date(a.time).toLocaleString('vi-VN')}</p>
+                    </div>
+                    <span className={`tag ${a.blocked ? 'danger' : 'on'}`}>{a.blocked ? 'Nguy hiểm' : 'An toàn'}</span>
+                  </div>
+                ))}
               </div>
             </div>
           </div>
         )}
 
-        {/* Filter Tab */}
+        {/* FILTER */}
         {activeTab === 'filter' && (
           <div className="content">
             <div className="card">
               <div className="toggle-row">
                 <div>
-                  <h3 className="card-title">🔒 Bộ lọc nội dung</h3>
+                  <h3 className="card-title">🔒 Bộ lọc nội dung AI</h3>
                   <p className="card-sub">Chặn tự động nội dung không phù hợp</p>
                 </div>
-                <button
-                  className={`toggle ${filterEnabled ? 'on' : 'off'}`}
-                  onClick={() => setFilterEnabled(!filterEnabled)}
-                >
+                <button className={`toggle ${filterEnabled ? 'on' : 'off'}`} onClick={() => toggleFilter(!filterEnabled)}>
                   {filterEnabled ? 'BẬT' : 'TẮT'}
                 </button>
               </div>
-
               <div className="filter-cats">
                 {[
-                  { icon: '🔞', label: 'Nội dung 18+', on: true },
-                  { icon: '🔫', label: 'Bạo lực', on: true },
-                  { icon: '🎰', label: 'Cờ bạc', on: true },
-                  { icon: '💊', label: 'Ma túy', on: true },
-                  { icon: '😰', label: 'Tự làm hại', on: true },
-                  { icon: '👾', label: 'Game không phù hợp', on: false },
+                  { icon: '🔞', label: 'Nội dung 18+' },
+                  { icon: '🔫', label: 'Bạo lực' },
+                  { icon: '🎰', label: 'Cờ bạc' },
+                  { icon: '💊', label: 'Ma túy' },
+                  { icon: '😰', label: 'Tự làm hại' },
+                  { icon: '💬', label: 'Ngôn ngữ độc hại' },
                 ].map((cat, i) => (
                   <div key={i} className="filter-cat">
                     <span>{cat.icon} {cat.label}</span>
-                    <span className={`tag ${cat.on ? 'on' : 'off'}`}>{cat.on ? 'Đang chặn' : 'Tắt'}</span>
+                    <span className="tag on">Đang chặn</span>
                   </div>
                 ))}
               </div>
             </div>
-
             <div className="card">
-              <h3 className="card-title">🌐 Website bị chặn</h3>
+              <h3 className="card-title">🌐 Website chặn thủ công</h3>
               <div className="blocked-list">
-                {['xxx-content.com', 'gambling-site.net', 'violent-games.io'].map((url, i) => (
+                {blockedUrls.length === 0 && <p style={{ color: '#718096', fontSize: '14px' }}>Chưa có website nào được chặn thủ công</p>}
+                {blockedUrls.map((url, i) => (
                   <div key={i} className="blocked-url">
                     <span>🚫 {url}</span>
-                    <button className="remove-btn">Xóa</button>
+                    <button className="remove-btn" onClick={() => removeBlockedUrl(url)}>Xóa</button>
                   </div>
                 ))}
               </div>
               <div className="add-url">
-                <input className="url-input" placeholder="Thêm website cần chặn..." />
-                <button className="add-btn">+ Thêm</button>
+                <input
+                  className="url-input"
+                  placeholder="vd: tiktok.com, facebook.com..."
+                  value={newBlockedUrl}
+                  onChange={e => setNewBlockedUrl(e.target.value)}
+                  onKeyDown={e => e.key === 'Enter' && addBlockedUrl()}
+                />
+                <button className="add-btn" onClick={addBlockedUrl}>+ Thêm</button>
               </div>
             </div>
           </div>
         )}
 
-        {/* Screen Time Tab */}
+        {/* CHILDREN */}
+        {activeTab === 'children' && (
+          <div className="content">
+            {children.length === 0 ? (
+              <div className="card" style={{ textAlign: 'center', padding: '60px' }}>
+                <p style={{ fontSize: '48px' }}>👨‍👩‍👧‍👦</p>
+                <h3 style={{ color: '#e2e8f0', marginBottom: '12px' }}>Chưa có thiết bị con</h3>
+                <button className="add-child-btn" onClick={() => setActiveTab('pairing')}>+ Ghép thiết bị</button>
+              </div>
+            ) : (
+              children.map(c => (
+                <div key={c.id} className="card child-card">
+                  <div className="child-header">
+                    <div className="child-avatar">👦</div>
+                    <div style={{ flex: 1 }}>
+                      <h3 className="child-name">{c.childName}</h3>
+                      <p className="card-sub">Ghép lúc: {new Date(c.pairedAt).toLocaleString('vi-VN')}</p>
+                      <span className={`tag ${c.online ? 'on' : 'off'}`}>{c.online ? '🟢 Đang online' : '⚫ Offline'}</span>
+                    </div>
+                    <button
+                      onClick={() => removeDevice(c.id)}
+                      style={{ background: '#ef444420', color: '#ef4444', border: '1px solid #ef444440', borderRadius: '8px', padding: '8px 14px', cursor: 'pointer', fontSize: '13px' }}
+                    >
+                      🗑️ Xóa
+                    </button>
+                  </div>
+                </div>
+              ))
+            )}
+            <button className="add-child-btn" onClick={() => setActiveTab('pairing')}>+ Ghép thiết bị mới</button>
+          </div>
+        )}
+
+        {/* SCREEN TIME */}
         {activeTab === 'screentime' && (
           <div className="content">
             <div className="card">
-              <h3 className="card-title">⏱️ Giới hạn thời gian màn hình</h3>
-              <div className="time-settings">
-                <div className="time-row">
-                  <span>Giới hạn mỗi ngày</span>
-                  <div className="time-control">
-                    <button className="time-btn">−</button>
-                    <span className="time-val">{child.screenTimeLimit} phút</span>
-                    <button className="time-btn">+</button>
+              <h3 className="card-title">⏱️ Thời gian màn hình hôm nay</h3>
+              {child ? (
+                <>
+                  <div className="screen-time-display">
+                    <div className="screen-time-nums">
+                      <span className="big-num">{child.screenTime || 0}</span>
+                      <span className="limit"> / {screenTimeLimit} phút</span>
+                    </div>
+                    <div style={{ background: '#1a1d2e', borderRadius: '8px', height: '12px', marginTop: '12px' }}>
+                      <div style={{
+                        background: (child.screenTime || 0) > screenTimeLimit ? '#ef4444' : '#667eea',
+                        width: `${Math.min(((child.screenTime || 0) / screenTimeLimit) * 100, 100)}%`,
+                        height: '12px', borderRadius: '8px', transition: 'width 0.5s'
+                      }} />
+                    </div>
                   </div>
-                </div>
+                  <div style={{ marginTop: '20px' }}>
+                    <p style={{ color: '#94a3b8', marginBottom: '8px' }}>Giới hạn mỗi ngày (phút):</p>
+                    <input
+                      type="number"
+                      value={screenTimeLimit}
+                      min={30} max={480}
+                      onChange={e => updateScreenTimeLimit(Number(e.target.value))}
+                      style={{ background: '#1a1d2e', color: '#e2e8f0', border: '1px solid #2d3748', borderRadius: '8px', padding: '8px 14px', width: '100px', fontSize: '16px' }}
+                    />
+                  </div>
+                </>
+              ) : <p style={{ color: '#718096' }}>Chưa có thiết bị</p>}
+              <div className="time-settings" style={{ marginTop: '20px' }}>
                 <div className="time-row">
                   <div>
                     <span>Chế độ Bedtime 🌙</span>
                     <p className="card-sub">Khóa thiết bị lúc 21:30 – 06:00</p>
                   </div>
-                  <button
-                    className={`toggle ${bedtimeEnabled ? 'on' : 'off'}`}
-                    onClick={() => setBedtimeEnabled(!bedtimeEnabled)}
-                  >
+                  <button className={`toggle ${bedtimeEnabled ? 'on' : 'off'}`} onClick={() => toggleBedtime(!bedtimeEnabled)}>
                     {bedtimeEnabled ? 'BẬT' : 'TẮT'}
                   </button>
                 </div>
               </div>
             </div>
-
-            <div className="card">
-              <h3 className="card-title">📱 Giới hạn theo ứng dụng</h3>
-              <div className="app-limits">
-                {[
-                  { icon: '🎵', name: 'TikTok', limit: 30 },
-                  { icon: '▶️', name: 'YouTube', limit: 60 },
-                  { icon: '📷', name: 'Instagram', limit: 20 },
-                  { icon: '🌐', name: 'Chrome', limit: 45 },
-                ].map((app, i) => (
-                  <div key={i} className="app-limit-row">
-                    <span>{app.icon} {app.name}</span>
-                    <div className="time-control">
-                      <button className="time-btn">−</button>
-                      <span className="time-val">{app.limit}p/ngày</span>
-                      <button className="time-btn">+</button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
           </div>
         )}
 
-        {/* Alerts Tab */}
-        {activeTab === 'alerts' && (
-          <div className="content">
-            <div className="card">
-              <h3 className="card-title">🔔 Tất cả cảnh báo</h3>
-              <div className="alert-list">
-                {MOCK_ALERTS.map(a => (
-                  <div key={a.id} className={`alert-row ${a.type}`}>
-                    <span className="alert-icon">{a.icon}</span>
-                    <div className="alert-content">
-                      <div className="alert-header">
-                        <p className="alert-title">{a.title}</p>
-                        <span className={`tag ${a.type}`}>
-                          {a.type === 'danger' ? 'Nguy hiểm' : a.type === 'warning' ? 'Cảnh báo' : 'Thông tin'}
-                        </span>
-                      </div>
-                      <p className="alert-desc">{a.desc}</p>
-                      <p className="alert-time">{MOCK_CHILDREN.find(c => c.id === a.childId)?.name} · {a.time}</p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Reports Tab */}
+        {/* REPORTS */}
         {activeTab === 'reports' && (
           <div className="content">
             <div className="card">
-              <h3 className="card-title">📈 Báo cáo tuần này</h3>
-              <div className="report-grid">
-                {['T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'CN'].map((day, i) => {
-                  const val = [80, 110, 95, 130, 70, 150, 60][i]
-                  const h = Math.round((val / 150) * 120)
-                  return (
-                    <div key={i} className="bar-col">
-                      <div className="bar-wrap">
-                        <div
-                          className="bar"
-                          style={{
-                            height: `${h}px`,
-                            background: val > 120 ? '#ef4444' : val > 100 ? '#f59e0b' : '#22c55e'
-                          }}
-                        />
-                      </div>
-                      <span className="bar-label">{day}</span>
-                      <span className="bar-val">{val}p</span>
-                    </div>
-                  )
-                })}
-              </div>
+              <h3 className="card-title">📈 Báo cáo hoạt động</h3>
               <div className="report-summary">
-                <div className="summary-item"><span>Tổng thời gian tuần</span><strong>695 phút</strong></div>
-                <div className="summary-item"><span>Trung bình mỗi ngày</span><strong>99 phút</strong></div>
-                <div className="summary-item"><span>Ngày vượt giới hạn</span><strong style={{ color: '#ef4444' }}>2 ngày</strong></div>
-                <div className="summary-item"><span>Tổng cảnh báo</span><strong style={{ color: '#f59e0b' }}>7 cảnh báo</strong></div>
+                <div className="summary-item"><span>Tổng URL đã phân tích</span><strong>{alerts.length}</strong></div>
+                <div className="summary-item"><span>Trang bị chặn</span><strong style={{ color: '#ef4444' }}>{blockedCount}</strong></div>
+                <div className="summary-item"><span>Trang an toàn</span><strong style={{ color: '#22c55e' }}>{safeCount}</strong></div>
+                <div className="summary-item"><span>Thời gian màn hình</span><strong>{child?.screenTime || 0} phút</strong></div>
+                <div className="summary-item"><span>Website chặn thủ công</span><strong>{blockedUrls.length}</strong></div>
               </div>
+            </div>
+            <div className="card">
+              <h3 className="card-title">🚫 Top website bị chặn nhiều nhất</h3>
+              {alerts.filter(a => a.blocked).length === 0
+                ? <p style={{ color: '#718096' }}>Chưa có dữ liệu</p>
+                : Object.entries(
+                    alerts.filter(a => a.blocked).reduce((acc, a) => {
+                      const host = a.url?.replace(/https?:\/\//, '').split('/')[0] || a.url
+                      acc[host] = (acc[host] || 0) + 1
+                      return acc
+                    }, {})
+                  ).sort((a, b) => b[1] - a[1]).slice(0, 5).map(([host, count], i) => (
+                    <div key={i} className="blocked-url">
+                      <span>🚫 {host}</span>
+                      <span className="tag danger">{count} lần</span>
+                    </div>
+                  ))
+              }
             </div>
           </div>
         )}
 
-        {/* Children Tab */}
-        {activeTab === 'children' && (
+        {/* SETTINGS */}
+        {activeTab === 'settings' && (
           <div className="content">
-            {MOCK_CHILDREN.map(c => (
-              <div key={c.id} className="card child-card">
-                <div className="child-header">
-                  <div className="child-avatar">{c.avatar}</div>
-                  <div>
-                    <h3 className="child-name">{c.name}</h3>
-                    <p className="card-sub">{c.age} tuổi · {c.device}</p>
-                    <span className={`tag ${c.status === 'online' ? 'on' : 'off'}`}>
-                      {c.status === 'online' ? '🟢 Đang online' : '⚫ Offline'}
-                    </span>
-                  </div>
-                  <div className="child-score" style={{ color: c.safetyScore >= 80 ? '#22c55e' : c.safetyScore >= 60 ? '#f59e0b' : '#ef4444' }}>
-                    <div className="score-num">{c.safetyScore}</div>
-                    <div className="score-label">Điểm an toàn</div>
+            <div className="card">
+              <h3 className="card-title">⚙️ Cài đặt tài khoản</h3>
+              <div className="report-summary">
+                <div className="summary-item"><span>Email</span><strong>{user.email}</strong></div>
+                <div className="summary-item"><span>Số thiết bị con</span><strong>{children.length}</strong></div>
+                <div className="summary-item"><span>Mã ghép cặp</span><strong style={{ fontFamily: 'monospace', color: '#667eea' }}>{pairingCode}</strong></div>
+              </div>
+            </div>
+            <div className="card" style={{ borderColor: '#ef4444' }}>
+              <h3 className="card-title" style={{ color: '#ef4444' }}>⚠️ Vùng nguy hiểm</h3>
+              <p style={{ color: '#718096', marginBottom: '16px' }}>Xóa tài khoản sẽ xóa toàn bộ dữ liệu và không thể khôi phục.</p>
+              {!showDeleteConfirm ? (
+                <button onClick={() => setShowDeleteConfirm(true)} style={{ background: '#ef4444', color: 'white', border: 'none', borderRadius: '10px', padding: '12px 24px', cursor: 'pointer', fontWeight: '600' }}>
+                  🗑️ Xóa tài khoản
+                </button>
+              ) : (
+                <div style={{ background: '#1a1d2e', borderRadius: '12px', padding: '20px' }}>
+                  <p style={{ color: '#ef4444', fontWeight: '600', marginBottom: '16px' }}>Bạn chắc chắn muốn xóa tài khoản?</p>
+                  <div style={{ display: 'flex', gap: '12px' }}>
+                    <button onClick={handleDeleteAccount} style={{ background: '#ef4444', color: 'white', border: 'none', borderRadius: '10px', padding: '12px 24px', cursor: 'pointer', fontWeight: '600' }}>
+                      Xác nhận xóa
+                    </button>
+                    <button onClick={() => setShowDeleteConfirm(false)} style={{ background: '#2d3748', color: '#e2e8f0', border: 'none', borderRadius: '10px', padding: '12px 24px', cursor: 'pointer' }}>
+                      Hủy
+                    </button>
                   </div>
                 </div>
-              </div>
-            ))}
-            <button className="add-child-btn">+ Thêm thiết bị con</button>
+              )}
+            </div>
           </div>
         )}
       </main>
@@ -474,7 +601,6 @@ Hãy đưa ra lời khuyên thực tế, ấm áp, cụ thể bằng tiếng Vi�
               <button className="close-btn" onClick={() => setAiCoachOpen(false)}>✕</button>
             </div>
             <p className="modal-sub">Hỏi AI về cách nuôi dạy con an toàn trên mạng</p>
-
             <div className="coach-examples">
               {[
                 'Con tôi xem TikTok quá nhiều, làm sao nói chuyện với con?',
@@ -484,19 +610,10 @@ Hãy đưa ra lời khuyên thực tế, ấm áp, cụ thể bằng tiếng Vi�
                 <button key={i} className="example-q" onClick={() => setAiCoachMsg(q)}>{q}</button>
               ))}
             </div>
-
-            <textarea
-              className="coach-input"
-              placeholder="Nhập câu hỏi của bạn..."
-              value={aiCoachMsg}
-              onChange={e => setAiCoachMsg(e.target.value)}
-              rows={3}
-            />
-
+            <textarea className="coach-input" placeholder="Nhập câu hỏi..." value={aiCoachMsg} onChange={e => setAiCoachMsg(e.target.value)} rows={3} />
             <button className="coach-send" onClick={askAiCoach} disabled={aiLoading}>
               {aiLoading ? '⏳ Đang phân tích...' : '💬 Hỏi AI Coach'}
             </button>
-
             {aiResponse && (
               <div className="coach-response">
                 <p className="response-label">💡 Gợi ý từ AI Coach:</p>
