@@ -159,18 +159,16 @@ export default function App() {
     setAiLoading(true)
     setAiResponse('')
     try {
-      const res = await fetch('https://api.anthropic.com/v1/messages', {
+      const res = await fetch('/api/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          model: 'claude-sonnet-4-6',
-          max_tokens: 1000,
-          system: `Bạn là VitaShield AI Coach - chuyên gia tư vấn nuôi dạy con an toàn trên không gian mạng. Hãy đưa ra lời khuyên thực tế, ấm áp, cụ thể bằng tiếng Việt. Ngắn gọn dưới 150 từ.`,
-          messages: [{ role: 'user', content: aiCoachMsg }],
+          mode: 'coach',
+          messages: [{ role: 'user', content: aiCoachMsg }]
         }),
       })
       const data = await res.json()
-      setAiResponse(data.content?.[0]?.text || 'Xin lỗi, không thể kết nối AI.')
+      setAiResponse(data.result || 'Xin lỗi, không thể kết nối AI.')
     } catch {
       setAiResponse('Không thể kết nối AI. Vui lòng thử lại.')
     }
