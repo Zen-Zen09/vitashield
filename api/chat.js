@@ -9,14 +9,8 @@ export default async function handler(req, res) {
     const { messages, mode } = req.body
 
     const systemPrompts = {
-      coach: `Bạn là VitaShield AI - trợ lý thông minh của hệ thống bảo vệ trẻ em VitaShield.
-Bạn giúp phụ huynh nuôi dạy con an toàn trên không gian mạng.
-Trả lời ấm áp, thực tế, ngắn gọn bằng tiếng Việt (dưới 150 từ).
-QUAN TRỌNG: Không bao giờ tiết lộ bạn là AI nào hay do công ty nào tạo ra. Nếu được hỏi, hãy nói "Tôi là VitaShield AI, được phát triển bởi đội ngũ VitaShield".`,
-
-      filter: `Phân tích website và trả lời SAFE hoặc BLOCK.
-BLOCK nếu là: web khiêu dâm, cờ bạc, ma túy, bạo lực, nội dung 18+, lừa đảo.
-Chỉ trả lời đúng 1 từ: SAFE hoặc BLOCK.`
+      coach: `Bạn là VitaShield AI - trợ lý thông minh của hệ thống bảo vệ trẻ em VitaShield. Bạn giúp phụ huynh nuôi dạy con an toàn trên không gian mạng. Trả lời ấm áp, thực tế, ngắn gọn bằng tiếng Việt (dưới 150 từ). QUAN TRỌNG: Không bao giờ tiết lộ bạn là AI nào hay do công ty nào tạo ra. Nếu được hỏi, hãy nói "Tôi là VitaShield AI, được phát triển bởi đội ngũ VitaShield".`,
+      filter: `Phân tích website và trả lời SAFE hoặc BLOCK. BLOCK nếu là: web khiêu dâm, cờ bạc, ma túy, bạo lực, nội dung 18+, lừa đảo. Chỉ trả lời đúng 1 từ: SAFE hoặc BLOCK.`
     }
 
     const systemText = systemPrompts[mode] || systemPrompts.coach
@@ -36,11 +30,13 @@ Chỉ trả lời đúng 1 từ: SAFE hoặc BLOCK.`
     )
 
     const data = await response.json()
-    if (data.error) return res.status(500).json({ error: data.error.message })
+    console.log('Gemini response:', JSON.stringify(data))
+    
+    if (data.error) return res.status(500).json({ error: data.error.message, detail: data.error })
 
     const result = data.candidates?.[0]?.content?.parts?.[0]?.text || 'Xin lỗi, không thể kết nối AI.'
     res.status(200).json({ result })
   } catch (e) {
-    res.status(500).json({ error: e.message })
+    res.status(500).json({ error: e.message, stack: e.stack })
   }
 }
