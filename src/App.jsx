@@ -3,7 +3,7 @@ import './App.css'
 import Login from './Login'
 import { auth, db } from './firebase'
 import { onAuthStateChanged, signOut, deleteUser } from 'firebase/auth'
-import { doc, setDoc, getDoc, collection, onSnapshot, deleteDoc, query, where, getDocs } from 'firebase/firestore'
+import { doc, setDoc, getDoc, collection, onSnapshot, deleteDoc, query, where, getDocs, addDoc } from 'firebase/firestore'
 
 function generateCode() {
   return Math.floor(100000 + Math.random() * 900000).toString()
