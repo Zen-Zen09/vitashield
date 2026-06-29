@@ -15,12 +15,25 @@ export default function Login({ onLogin }) {
     try {
       if (isRegister) {
         await createUserWithEmailAndPassword(auth, email, password)
+        fetch('/api/notify', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            to_email: email,
+            parent_name: email.split('@')[0],
+            child_name: 'Chua co',
+            blocked_url: 'Chao mung ban den voi VitaShield!',
+            device_name: 'VitaShield'
+          })
+        }).catch(() => {})
       } else {
         await signInWithEmailAndPassword(auth, email, password)
       }
       onLogin()
     } catch (e) {
-      setError(e.message.includes('invalid') ? 'Email hoặc mật khẩu không đúng' : e.message.includes('weak') ? 'Mật khẩu cần ít nhất 6 ký tự' : 'Đã có lỗi xảy ra, thử lại nhé')
+      if (e.message.includes('invalid')) setError('Email hoac mat khau khong dung')
+      else if (e.message.includes('weak')) setError('Mat khau can it nhat 6 ky tu')
+      else setError('Da co loi xay ra, thu lai nhe')
     }
     setLoading(false)
   }
@@ -40,14 +53,13 @@ export default function Login({ onLogin }) {
             VitaShield
           </h1>
           <p style={{ color: '#64748b', marginTop: '6px', fontSize: '14px' }}>
-            {isRegister ? 'Tạo tài khoản phụ huynh' : 'Đăng nhập tài khoản phụ huynh'}
+            {isRegister ? 'Tao tai khoan phu huynh' : 'Dang nhap tai khoan phu huynh'}
           </p>
         </div>
-
         <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
           <input
             type="email"
-            placeholder="Email của bạn"
+            placeholder="Email cua ban"
             value={email}
             onChange={e => setEmail(e.target.value)}
             style={{
@@ -58,7 +70,7 @@ export default function Login({ onLogin }) {
           />
           <input
             type="password"
-            placeholder="Mật khẩu (ít nhất 6 ký tự)"
+            placeholder="Mat khau (it nhat 6 ky tu)"
             value={password}
             onChange={e => setPassword(e.target.value)}
             onKeyDown={e => e.key === 'Enter' && handleSubmit()}
@@ -68,11 +80,9 @@ export default function Login({ onLogin }) {
               color: '#e2e8f0', fontSize: '14px', outline: 'none'
             }}
           />
-
           {error && (
             <p style={{ color: '#f87171', fontSize: '13px', textAlign: 'center' }}>{error}</p>
           )}
-
           <button
             onClick={handleSubmit}
             disabled={loading}
@@ -83,9 +93,8 @@ export default function Login({ onLogin }) {
               cursor: loading ? 'not-allowed' : 'pointer', opacity: loading ? 0.7 : 1
             }}
           >
-            {loading ? '⏳ Đang xử lý...' : isRegister ? '🚀 Tạo tài khoản' : '🔐 Đăng nhập'}
+            {loading ? '⏳ Dang xu ly...' : isRegister ? 'Dang ky' : 'Dang nhap'}
           </button>
-
           <button
             onClick={() => { setIsRegister(!isRegister); setError('') }}
             style={{
@@ -93,7 +102,7 @@ export default function Login({ onLogin }) {
               color: '#6366f1', fontSize: '13px', cursor: 'pointer'
             }}
           >
-            {isRegister ? 'Đã có tài khoản? Đăng nhập' : 'Chưa có tài khoản? Đăng ký ngay'}
+            {isRegister ? 'Da co tai khoan? Dang nhap' : 'Chua co tai khoan? Dang ky ngay'}
           </button>
         </div>
       </div>
