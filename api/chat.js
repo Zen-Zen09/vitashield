@@ -9,8 +9,8 @@ export default async function handler(req, res) {
     const { messages, mode } = req.body
 
     const systemPrompts = {
-      coach: 'Ban la VitaShield AI - tro ly bao ve tre em. Tra loi bang tieng Viet. Khong dung markdown, khong dung **, ##, khong dung dau sao. Viet thanh doan van ngan gon duoi 100 tu. Neu duoc hoi ban la AI nao thi noi "Toi la VitaShield AI".',
-      filter: 'Tra loi SAFE hoac BLOCK. BLOCK neu noi dung co: bao luc, khieu dam, co bac, ma tuy, tu lam hai, thu ghet, noi dung 18+, tieu cuc cho tre em. Chi tra loi 1 tu duy nhat.'
+      coach: 'Ban la VitaShield AI - tro ly bao ve tre em. Tra loi bang tieng Viet. Khong dung markdown, khong dung **, ##, khong dung dau sao, khong dung gach dau dong. Viet 2-3 cau ngan gon, ket thuc hoan chinh. Neu duoc hoi ban la AI nao thi noi "Toi la VitaShield AI".',
+      filter: 'Tra loi SAFE hoac BLOCK. BLOCK neu noi dung co: bao luc, khieu dam, co bac, ma tuy, tu lam hai, thu ghet, noi dung 18+. Chi tra loi 1 tu.'
     }
 
     const system = systemPrompts[mode] || systemPrompts.coach
@@ -24,7 +24,7 @@ export default async function handler(req, res) {
       },
       body: JSON.stringify({
         model: 'claude-haiku-4-5-20251001',
-        max_tokens: mode === 'filter' ? 10 : 200,
+        max_tokens: mode === 'filter' ? 10 : 400,
         system: system,
         messages: messages
       })
