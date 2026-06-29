@@ -15,7 +15,7 @@ export default async function handler(req, res) {
 
     const system = systemPrompts[mode] || systemPrompts.coach
 
-    const response = await fetch('https://api.anthropic.com/v1/messages', {
+    const anthropicRes = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -25,13 +25,18 @@ export default async function handler(req, res) {
       body: JSON.stringify({
         model: 'claude-haiku-4-5-20251001',
         max_tokens: mode === 'filter' ? 10 : 300,
-        system,
-        messages
+        system: system,
+        messages: messages
       })
     })
 
-    const data = await response.json()
-    const result = data.content?.[0]?.text || ''
+    const data = await anthropicRes.json()
+
+    if (data.error) {
+      return res.status(500).json({ error: data.error.message })
+    }
+
+    const result = data.content && data.content[0] && data.content[0].text ? data.content[0].text : ''
     res.status(200).json({ result })
   } catch (e) {
     res.status(500).json({ error: e.message })
