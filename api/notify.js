@@ -32,17 +32,17 @@ export default async function handler(req, res) {
       '</div></div>'
     ].join('')
 
-    const response = await fetch('https://api.resend.com/emails', {
+    const response = await fetch('https://api.brevo.com/v3/smtp/email', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': 'Bearer ' + process.env.RESEND_API_KEY
+        'api-key': process.env.BREVO_API_KEY
       },
       body: JSON.stringify({
-        from: 'VitaShield <onboarding@resend.dev>',
-        to: [to_email],
+        sender: { name: 'VitaShield', email: 'khongminhnguyen09@gmail.com' },
+        to: [{ email: to_email }],
         subject: '[VitaShield] ' + cName + ' vua truy cap trang bi chan',
-        html: html
+        htmlContent: html
       })
     })
 
