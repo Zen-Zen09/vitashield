@@ -46,6 +46,8 @@ export default function Login({ onLogin }) {
       fontFamily: 'Nunito, sans-serif', padding: '20px'
     }}>
       <div style={{ width: '100%', maxWidth: '420px' }}>
+
+        {/* Logo */}
         <div style={{ textAlign: 'center', marginBottom: '32px' }}>
           <img src="/logo.png" alt="VitaShield" style={{ width: 72, height: 72, borderRadius: 20, objectFit: 'cover', marginBottom: 16, boxShadow: '0 8px 32px rgba(168,85,247,0.25)' }} />
           <h1 style={{ fontSize: '32px', fontWeight: '900', background: 'linear-gradient(135deg, #ec4899, #a855f7)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', margin: '0 0 6px' }}>
@@ -56,6 +58,7 @@ export default function Login({ onLogin }) {
           </p>
         </div>
 
+        {/* Form */}
         <div style={{
           background: 'white', borderRadius: '24px',
           padding: '32px', boxShadow: '0 20px 60px rgba(168,85,247,0.15)',
@@ -71,10 +74,9 @@ export default function Login({ onLogin }) {
                 onChange={e => setEmail(e.target.value)}
                 style={{
                   width: '100%', background: '#fdf4ff', border: '1.5px solid #e9d5ff',
-                  borderRadius: '12px', padding: '12px 16px',
-                  color: '#3b1f5e', fontSize: '14px', outline: 'none',
-                  fontFamily: 'Nunito, sans-serif', fontWeight: 600,
-                  boxSizing: 'border-box'
+                  borderRadius: '12px', padding: '12px 16px', color: '#3b1f5e',
+                  fontSize: '14px', outline: 'none', fontFamily: 'Nunito, sans-serif',
+                  fontWeight: 600, boxSizing: 'border-box'
                 }}
               />
             </div>
@@ -88,10 +90,9 @@ export default function Login({ onLogin }) {
                 onKeyDown={e => e.key === 'Enter' && handleSubmit()}
                 style={{
                   width: '100%', background: '#fdf4ff', border: '1.5px solid #e9d5ff',
-                  borderRadius: '12px', padding: '12px 16px',
-                  color: '#3b1f5e', fontSize: '14px', outline: 'none',
-                  fontFamily: 'Nunito, sans-serif', fontWeight: 600,
-                  boxSizing: 'border-box'
+                  borderRadius: '12px', padding: '12px 16px', color: '#3b1f5e',
+                  fontSize: '14px', outline: 'none', fontFamily: 'Nunito, sans-serif',
+                  fontWeight: 600, boxSizing: 'border-box'
                 }}
               />
             </div>
@@ -121,19 +122,41 @@ export default function Login({ onLogin }) {
             <button
               onClick={() => { setIsRegister(!isRegister); setError('') }}
               style={{
-                background: 'transparent', border: 'none',
-                color: '#a855f7', fontSize: '13px', cursor: 'pointer',
-                fontFamily: 'Nunito, sans-serif', fontWeight: 700, padding: '4px'
+                background: 'transparent', border: 'none', color: '#a855f7',
+                fontSize: '13px', cursor: 'pointer', fontFamily: 'Nunito, sans-serif',
+                fontWeight: 700, padding: '4px'
               }}
             >
               {isRegister ? 'Da co tai khoan? Dang nhap' : 'Chua co tai khoan? Dang ky ngay'}
             </button>
+
+            {/* Links huong dan */}
+            <div style={{ borderTop: '1px solid #f3e8ff', paddingTop: 14, display: 'flex', gap: '12px', justifyContent: 'center', flexWrap: 'wrap' }}>
+              
+                href="https://drive.google.com/file/d/1sKefULl3b4_dal3wMeBN26nd13ttdEe9/view?usp=drive_link"
+                target="_blank"
+                rel="noreferrer"
+                style={{ color: '#a855f7', fontSize: '12px', fontWeight: 700, textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 4 }}
+              >
+                📖 Huong dan su dung
+              </a>
+              <span style={{ color: '#e9d5ff', fontSize: '12px' }}>|</span>
+              
+                href="https://drive.google.com/file/d/1sKefULl3b4_dal3wMeBN26nd13ttdEe9/view?usp=drive_link"
+                target="_blank"
+                rel="noreferrer"
+                style={{ color: '#a855f7', fontSize: '12px', fontWeight: 700, textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 4 }}
+              >
+                🔧 Huong dan cai dat
+              </a>
+            </div>
           </div>
         </div>
 
         <p style={{ textAlign: 'center', color: '#c084fc', fontSize: '12px', marginTop: 20, fontWeight: 600 }}>
           Bao ve con bang Tri tue - Xay dung bang Trai tim 💜
         </p>
+
       </div>
     </div>
   )
