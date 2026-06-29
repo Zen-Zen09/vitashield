@@ -49,7 +49,6 @@ export default function Login({ onLogin }) {
     }}>
       <div style={{ width: '100%', maxWidth: '420px' }}>
 
-        {/* Logo */}
         <div style={{ textAlign: 'center', marginBottom: '28px' }}>
           <img src="/logo.png" alt="VitaShield" style={{ width: 72, height: 72, borderRadius: 20, objectFit: 'cover', marginBottom: 14, boxShadow: '0 8px 32px rgba(168,85,247,0.25)' }} />
           <h1 style={{ fontSize: '32px', fontWeight: '900', background: 'linear-gradient(135deg, #ec4899, #a855f7)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', margin: '0 0 6px' }}>
@@ -60,12 +59,7 @@ export default function Login({ onLogin }) {
           </p>
         </div>
 
-        {/* Form */}
-        <div style={{
-          background: 'white', borderRadius: '24px',
-          padding: '28px', boxShadow: '0 20px 60px rgba(168,85,247,0.15)',
-          border: '1.5px solid #f3e8ff', marginBottom: 16
-        }}>
+        <div style={{ background: 'white', borderRadius: '24px', padding: '28px', boxShadow: '0 20px 60px rgba(168,85,247,0.15)', border: '1.5px solid #f3e8ff', marginBottom: 16 }}>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
             <div>
               <label style={{ fontSize: '13px', fontWeight: 700, color: '#7e22ce', display: 'block', marginBottom: 6 }}>Email</label>
@@ -100,9 +94,8 @@ export default function Login({ onLogin }) {
           </div>
         </div>
 
-        {/* Links huong dan - hien thi ro rang */}
         <div style={{ background: 'white', borderRadius: '20px', padding: '20px', boxShadow: '0 8px 32px rgba(168,85,247,0.1)', border: '1.5px solid #e9d5ff' }}>
-          <p style={{ textAlign: 'center', color: '#7e22ce', fontSize: '13px', fontWeight: 800, margin: '0 0 14px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
+          <p style={{ textAlign: 'center', color: '#7e22ce', fontSize: '13px', fontWeight: 800, margin: '0 0 14px' }}>
             📚 Tai lieu huong dan VitaShield
           </p>
           <div style={{ display: 'flex', gap: '10px' }}>
@@ -110,13 +103,13 @@ export default function Login({ onLogin }) {
               style={{ flex: 1, background: 'linear-gradient(135deg, #fdf4ff, #f3e8ff)', border: '1.5px solid #e9d5ff', borderRadius: '14px', padding: '14px 10px', textAlign: 'center', color: '#7e22ce', fontSize: '13px', fontWeight: 800, textDecoration: 'none', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6 }}
             >
               <span style={{ fontSize: '24px' }}>📖</span>
-              <span>Huong dan<br/>su dung</span>
+              <span>Huong dan su dung</span>
             </a>
             <a href={GUIDE_URL} target="_blank" rel="noreferrer"
               style={{ flex: 1, background: 'linear-gradient(135deg, #fdf4ff, #fce7f3)', border: '1.5px solid #fbcfe8', borderRadius: '14px', padding: '14px 10px', textAlign: 'center', color: '#be185d', fontSize: '13px', fontWeight: 800, textDecoration: 'none', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6 }}
             >
               <span style={{ fontSize: '24px' }}>🔧</span>
-              <span>Huong dan<br/>cai dat</span>
+              <span>Huong dan cai dat</span>
             </a>
           </div>
         </div>
@@ -128,4 +121,4 @@ export default function Login({ onLogin }) {
       </div>
     </div>
   )
-}
+}   
