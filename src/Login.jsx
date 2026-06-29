@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { auth } from './firebase'
 import { signInWithEmailAndPassword, createUserWithEmailAndPassword } from 'firebase/auth'
 
-const GUIDE_URL = 'https://drive.google.com/file/d/1sKefULl3b4_dal3wMeBN26nd13ttdEe9/view?usp=drive_link'
+const FOLDER_URL = 'https://drive.google.com/drive/folders/1jCsoJtCKtFGNCPpgbNRL4fI0rZyBiwpx?usp=drive_link'
 
 export default function Login({ onLogin }) {
   const [email, setEmail] = useState('')
@@ -94,25 +94,24 @@ export default function Login({ onLogin }) {
           </div>
         </div>
 
-        <div style={{ background: 'white', borderRadius: '20px', padding: '20px', boxShadow: '0 8px 32px rgba(168,85,247,0.1)', border: '1.5px solid #e9d5ff' }}>
-          <p style={{ textAlign: 'center', color: '#7e22ce', fontSize: '13px', fontWeight: 800, margin: '0 0 14px' }}>
-            📚 Tai lieu huong dan VitaShield
-          </p>
-          <div style={{ display: 'flex', gap: '10px' }}>
-            <a href={GUIDE_URL} target="_blank" rel="noreferrer"
-              style={{ flex: 1, background: 'linear-gradient(135deg, #fdf4ff, #f3e8ff)', border: '1.5px solid #e9d5ff', borderRadius: '14px', padding: '14px 10px', textAlign: 'center', color: '#7e22ce', fontSize: '13px', fontWeight: 800, textDecoration: 'none', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6 }}
-            >
-              <span style={{ fontSize: '24px' }}>📖</span>
-              <span>Huong dan su dung</span>
-            </a>
-            <a href={GUIDE_URL} target="_blank" rel="noreferrer"
-              style={{ flex: 1, background: 'linear-gradient(135deg, #fdf4ff, #fce7f3)', border: '1.5px solid #fbcfe8', borderRadius: '14px', padding: '14px 10px', textAlign: 'center', color: '#be185d', fontSize: '13px', fontWeight: 800, textDecoration: 'none', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6 }}
-            >
-              <span style={{ fontSize: '24px' }}>🔧</span>
-              <span>Huong dan cai dat</span>
-            </a>
+        <a href={FOLDER_URL} target="_blank" rel="noreferrer" style={{ textDecoration: 'none' }}>
+          <div style={{ background: 'white', borderRadius: '20px', padding: '20px', boxShadow: '0 8px 32px rgba(168,85,247,0.1)', border: '1.5px solid #e9d5ff', cursor: 'pointer', transition: 'all 0.2s' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+              <div style={{ width: 48, height: 48, borderRadius: 14, background: 'linear-gradient(135deg, #ec4899, #a855f7)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 22, flexShrink: 0 }}>
+                📁
+              </div>
+              <div>
+                <p style={{ margin: 0, color: '#7e22ce', fontSize: '14px', fontWeight: 800 }}>
+                  Tai lieu VitaShield
+                </p>
+                <p style={{ margin: '2px 0 0', color: '#a855f7', fontSize: '12px', fontWeight: 600 }}>
+                  Huong dan su dung + Huong dan cai dat + File cai dat Extension
+                </p>
+              </div>
+              <div style={{ marginLeft: 'auto', color: '#c084fc', fontSize: 18 }}>→</div>
+            </div>
           </div>
-        </div>
+        </a>
 
         <p style={{ textAlign: 'center', color: '#c084fc', fontSize: '12px', marginTop: 16, fontWeight: 600 }}>
           Bao ve con bang Tri tue - Xay dung bang Trai tim 💜
@@ -121,4 +120,4 @@ export default function Login({ onLogin }) {
       </div>
     </div>
   )
-}   
+}
