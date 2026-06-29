@@ -73,4 +73,3 @@ export default async function handler(req, res) {
   }
 }
 '@
-[System.IO.File]::WriteAllText("$PWD\api\notify.js", $content, [System.Text.Encoding]::UTF8)
