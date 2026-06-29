@@ -40,71 +40,100 @@ export default function Login({ onLogin }) {
 
   return (
     <div style={{
-      minHeight: '100vh', background: '#0f1117',
-      display: 'flex', alignItems: 'center', justifyContent: 'center'
+      minHeight: '100vh',
+      background: 'linear-gradient(135deg, #fdf4ff 0%, #f3e8ff 50%, #fce7f3 100%)',
+      display: 'flex', alignItems: 'center', justifyContent: 'center',
+      fontFamily: 'Nunito, sans-serif', padding: '20px'
     }}>
-      <div style={{
-        background: '#161b27', border: '1px solid #1e2535',
-        borderRadius: '20px', padding: '40px', width: '400px'
-      }}>
+      <div style={{ width: '100%', maxWidth: '420px' }}>
         <div style={{ textAlign: 'center', marginBottom: '32px' }}>
-          <div style={{ fontSize: '48px' }}>🛡️</div>
-          <h1 style={{ fontSize: '28px', fontWeight: '800', background: 'linear-gradient(135deg, #6366f1, #8b5cf6)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
+          <img src="/logo.png" alt="VitaShield" style={{ width: 72, height: 72, borderRadius: 20, objectFit: 'cover', marginBottom: 16, boxShadow: '0 8px 32px rgba(168,85,247,0.25)' }} />
+          <h1 style={{ fontSize: '32px', fontWeight: '900', background: 'linear-gradient(135deg, #ec4899, #a855f7)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', margin: '0 0 6px' }}>
             VitaShield
           </h1>
-          <p style={{ color: '#64748b', marginTop: '6px', fontSize: '14px' }}>
+          <p style={{ color: '#a855f7', fontSize: '14px', fontWeight: 700, margin: 0 }}>
             {isRegister ? 'Tao tai khoan phu huynh' : 'Dang nhap tai khoan phu huynh'}
           </p>
         </div>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
-          <input
-            type="email"
-            placeholder="Email cua ban"
-            value={email}
-            onChange={e => setEmail(e.target.value)}
-            style={{
-              background: '#0f1117', border: '1px solid #1e2535',
-              borderRadius: '10px', padding: '12px 16px',
-              color: '#e2e8f0', fontSize: '14px', outline: 'none'
-            }}
-          />
-          <input
-            type="password"
-            placeholder="Mat khau (it nhat 6 ky tu)"
-            value={password}
-            onChange={e => setPassword(e.target.value)}
-            onKeyDown={e => e.key === 'Enter' && handleSubmit()}
-            style={{
-              background: '#0f1117', border: '1px solid #1e2535',
-              borderRadius: '10px', padding: '12px 16px',
-              color: '#e2e8f0', fontSize: '14px', outline: 'none'
-            }}
-          />
-          {error && (
-            <p style={{ color: '#f87171', fontSize: '13px', textAlign: 'center' }}>{error}</p>
-          )}
-          <button
-            onClick={handleSubmit}
-            disabled={loading}
-            style={{
-              background: 'linear-gradient(135deg, #6366f1, #8b5cf6)',
-              color: 'white', border: 'none', borderRadius: '10px',
-              padding: '13px', fontSize: '15px', fontWeight: '700',
-              cursor: loading ? 'not-allowed' : 'pointer', opacity: loading ? 0.7 : 1
-            }}
-          >
-            {loading ? '⏳ Dang xu ly...' : isRegister ? 'Dang ky' : 'Dang nhap'}
-          </button>
-          <button
-            onClick={() => { setIsRegister(!isRegister); setError('') }}
-            style={{
-              background: 'transparent', border: 'none',
-              color: '#6366f1', fontSize: '13px', cursor: 'pointer'
-            }}
-          >
-            {isRegister ? 'Da co tai khoan? Dang nhap' : 'Chua co tai khoan? Dang ky ngay'}
-          </button>
+
+        <div style={{
+          background: 'white', borderRadius: '24px',
+          padding: '32px', boxShadow: '0 20px 60px rgba(168,85,247,0.15)',
+          border: '1.5px solid #f3e8ff'
+        }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+            <div>
+              <label style={{ fontSize: '13px', fontWeight: 700, color: '#7e22ce', display: 'block', marginBottom: 6 }}>Email</label>
+              <input
+                type="email"
+                placeholder="email@example.com"
+                value={email}
+                onChange={e => setEmail(e.target.value)}
+                style={{
+                  width: '100%', background: '#fdf4ff', border: '1.5px solid #e9d5ff',
+                  borderRadius: '12px', padding: '12px 16px',
+                  color: '#3b1f5e', fontSize: '14px', outline: 'none',
+                  fontFamily: 'Nunito, sans-serif', fontWeight: 600,
+                  boxSizing: 'border-box'
+                }}
+              />
+            </div>
+            <div>
+              <label style={{ fontSize: '13px', fontWeight: 700, color: '#7e22ce', display: 'block', marginBottom: 6 }}>Mat khau</label>
+              <input
+                type="password"
+                placeholder="It nhat 6 ky tu"
+                value={password}
+                onChange={e => setPassword(e.target.value)}
+                onKeyDown={e => e.key === 'Enter' && handleSubmit()}
+                style={{
+                  width: '100%', background: '#fdf4ff', border: '1.5px solid #e9d5ff',
+                  borderRadius: '12px', padding: '12px 16px',
+                  color: '#3b1f5e', fontSize: '14px', outline: 'none',
+                  fontFamily: 'Nunito, sans-serif', fontWeight: 600,
+                  boxSizing: 'border-box'
+                }}
+              />
+            </div>
+
+            {error && (
+              <div style={{ background: '#fce7f3', border: '1px solid #fbcfe8', borderRadius: 10, padding: '10px 14px', color: '#be185d', fontSize: '13px', fontWeight: 700, textAlign: 'center' }}>
+                {error}
+              </div>
+            )}
+
+            <button
+              onClick={handleSubmit}
+              disabled={loading}
+              style={{
+                background: loading ? '#e9d5ff' : 'linear-gradient(135deg, #ec4899, #a855f7)',
+                color: 'white', border: 'none', borderRadius: '14px',
+                padding: '14px', fontSize: '15px', fontWeight: '800',
+                cursor: loading ? 'not-allowed' : 'pointer',
+                fontFamily: 'Nunito, sans-serif', marginTop: 4,
+                boxShadow: loading ? 'none' : '0 4px 20px rgba(168,85,247,0.35)',
+                transition: 'all 0.2s'
+              }}
+            >
+              {loading ? '⏳ Dang xu ly...' : isRegister ? '✨ Dang ky ngay' : '💜 Dang nhap'}
+            </button>
+
+            <button
+              onClick={() => { setIsRegister(!isRegister); setError('') }}
+              style={{
+                background: 'transparent', border: 'none',
+                color: '#a855f7', fontSize: '13px', cursor: 'pointer',
+                fontFamily: 'Nunito, sans-serif', fontWeight: 700, padding: '4px'
+              }}
+            >
+              {isRegister ? 'Da co tai khoan? Dang nhap' : 'Chua co tai khoan? Dang ky ngay'}
+            </button>
+          </div>
         </div>
+
+        <p style={{ textAlign: 'center', color: '#c084fc', fontSize: '12px', marginTop: 20, fontWeight: 600 }}>
+          Bao ve con bang Tri tue - Xay dung bang Trai tim 💜
+        </p>
       </div>
     </div>
   )
